@@ -14,17 +14,17 @@ const getEmbedUrl = (url?: string) => {
   try {
     if (url.includes('open.spotify.com')) {
       const cleanUrl = url.replace('/track/', '/embed/track/').replace('/playlist/', '/embed/playlist/');
-      return cleanUrl.split('?')[0];
+      return cleanUrl.split('?')[0] + '?autoplay=1';
     }
 
     if (url.includes('youtube.com/watch')) {
       const id = new URL(url).searchParams.get('v');
-      return id ? `https://www.youtube.com/embed/${id}` : '';
+      return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : '';
     }
 
     if (url.includes('youtu.be/')) {
       const id = url.split('youtu.be/')[1]?.split('?')[0];
-      return id ? `https://www.youtube.com/embed/${id}` : '';
+      return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : '';
     }
   } catch {
     return '';
