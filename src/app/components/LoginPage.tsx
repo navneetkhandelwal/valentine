@@ -210,22 +210,20 @@ export const LoginPage = () => {
                 </div>
               </div>
 
-              {signupRole === 'admin' && (
-                <div>
-                  <Label htmlFor="admin-pass" className="text-gray-700 flex items-center gap-2">
-                    <Shield size={16} /> Admin Passcode
-                  </Label>
-                  <Input
-                    id="admin-pass"
-                    type="password"
-                    value={adminPasscode}
-                    onChange={(e) => setAdminPasscode(e.target.value)}
-                    placeholder="required for admin signup"
-                    className="mt-1 border-rose-200 focus:border-rose-500"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <Label htmlFor="admin-pass" className="text-gray-700 flex items-center gap-2">
+                  <Shield size={16} /> Paid passcode key required to signup (contact admin @techtalksbynavneet for more)
+                </Label>
+                <Input
+                  id="admin-pass"
+                  type="password"
+                  value={adminPasscode}
+                  onChange={(e) => setAdminPasscode(e.target.value)}
+                  placeholder="Enter paid passcode key"
+                  className="mt-1 border-rose-200 focus:border-rose-500"
+                  required
+                />
+              </div>
 
               <Button
                 type="submit"
@@ -279,8 +277,17 @@ export const LoginPage = () => {
             </form>
           )}
 
-          <div className="mt-6 text-center text-xs text-gray-500 leading-relaxed">
-            Create public pages for each Valentine day and share with direct links.
+          <div className="mt-6 text-center text-xs text-gray-500 leading-relaxed space-y-2">
+            <p>Create public pages for each Valentine day and share with direct links.</p>
+            <p className="text-sm font-medium text-gray-700">Website designed by Navneet Khandelwal</p>
+            <a
+              href="https://instagram.com/techtalksbynavneet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-rose-600 hover:text-rose-700 font-semibold"
+            >
+              @techtalksbynavneet
+            </a>
           </div>
         </div>
       </motion.div>

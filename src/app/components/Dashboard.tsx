@@ -175,7 +175,14 @@ export const Dashboard = () => {
   };
 
   const handlePreview = (dayPath: string, short = false) => {
-    navigate(short ? `/${dayPath}` : `/${user?.username}/${dayPath}`, { state: { skipIntro: true } });
+    navigate(short ? `/${dayPath}` : `/${user?.username}/${dayPath}`, {
+      state: {
+        skipIntro: true,
+        previewUsername: user?.username,
+        previewDayContent: dayForms[dayPath] || emptyDayForm,
+        previewPhotos: dayPhotos[dayPath] || [],
+      },
+    });
   };
 
   const updateDayField = (dayPath: string, key: keyof DayContent, value: string | boolean) => {

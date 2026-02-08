@@ -91,8 +91,8 @@ app.post("/make-server-3b2037e0/signup", async (c) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     const normalizedRole = role === 'admin' ? 'admin' : 'member';
-    if (normalizedRole === 'admin' && (!adminPasscode || providedPasscode !== adminPasscode)) {
-      return c.json({ error: 'Invalid admin passcode' }, 403);
+    if (!adminPasscode || providedPasscode !== adminPasscode) {
+      return c.json({ error: 'Invalid paid passcode key' }, 403);
     }
     
     // Check if username already exists

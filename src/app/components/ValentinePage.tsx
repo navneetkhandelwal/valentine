@@ -53,6 +53,14 @@ export const ValentinePage = () => {
   const [youtubeReady, setYoutubeReady] = useState(false);
   const [hasProceeded, setHasProceeded] = useState(() => Boolean((location.state as { skipIntro?: boolean } | null)?.skipIntro));
   const songFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const locationState = (location.state as
+    | {
+        skipIntro?: boolean;
+        previewUsername?: string;
+        previewDayContent?: any;
+        previewPhotos?: any[];
+      }
+    | null) ?? null;
 
   const normalizeRoute = () => {
     if (rawDay && VALID_DAY_PATHS.includes(rawDay)) {
@@ -112,10 +120,15 @@ export const ValentinePage = () => {
       }
 
       const content = await getDayContent(route.username, route.day);
+      const shouldUsePreviewState = Boolean(
+        locationState?.previewDayContent &&
+        locationState?.previewUsername &&
+        locationState.previewUsername === route.username,
+      );
       setResolvedUsername(route.username);
       setProfileData(profile.profile);
-      setDayContent(content || {});
-      setPhotos(profile.photos?.[route.day] || []);
+      setDayContent(shouldUsePreviewState ? locationState?.previewDayContent || {} : content || {});
+      setPhotos(shouldUsePreviewState ? locationState?.previewPhotos || [] : profile.photos?.[route.day] || []);
       setLoading(false);
       return;
     }
