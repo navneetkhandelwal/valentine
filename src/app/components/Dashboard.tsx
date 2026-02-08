@@ -474,7 +474,6 @@ export const Dashboard = () => {
                                     value={form.customMessage || ''}
                                     onChange={(e) => updateDayField(day.path, 'customMessage', e.target.value)}
                                     placeholder={`Write a special ${day.name} message...`}
-                                    maxLength={350}
                                     rows={3}
                                     className="mt-2 border-rose-200 resize-none"
                                   />
