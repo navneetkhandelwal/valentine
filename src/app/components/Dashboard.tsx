@@ -175,7 +175,7 @@ export const Dashboard = () => {
   };
 
   const handlePreview = (dayPath: string, short = false) => {
-    navigate(short ? `/${dayPath}` : `/${user?.username}/${dayPath}`);
+    navigate(short ? `/${dayPath}` : `/${user?.username}/${dayPath}`, { state: { skipIntro: true } });
   };
 
   const updateDayField = (dayPath: string, key: keyof DayContent, value: string | boolean) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, ArrowLeft, ChevronLeft, ChevronRight, X, Music } from 'lucide-react';
@@ -19,12 +19,16 @@ const getEmbedUrl = (url?: string) => {
 
     if (url.includes('youtube.com/watch')) {
       const id = new URL(url).searchParams.get('v');
-      return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : '';
+      return id
+        ? `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&mute=0`
+        : '';
     }
 
     if (url.includes('youtu.be/')) {
       const id = url.split('youtu.be/')[1]?.split('?')[0];
-      return id ? `https://www.youtube.com/embed/${id}?autoplay=1` : '';
+      return id
+        ? `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&mute=0`
+        : '';
     }
   } catch {
     return '';
@@ -46,6 +50,9 @@ export const ValentinePage = () => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [youtubeReady, setYoutubeReady] = useState(false);
+  const [hasProceeded, setHasProceeded] = useState(() => Boolean((location.state as { skipIntro?: boolean } | null)?.skipIntro));
+  const songFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const normalizeRoute = () => {
     if (rawDay && VALID_DAY_PATHS.includes(rawDay)) {
@@ -80,6 +87,11 @@ export const ValentinePage = () => {
       document.title = 'HappyValentine.in';
     };
   }, [rawUsername, rawDay, location.search]);
+
+  useEffect(() => {
+    const skipIntro = Boolean((location.state as { skipIntro?: boolean } | null)?.skipIntro);
+    setHasProceeded(skipIntro);
+  }, [rawUsername, rawDay, location.search, location.state]);
 
   const loadPageData = async () => {
     if (!route.day || !valentineDay) {
@@ -122,6 +134,89 @@ export const ValentinePage = () => {
     setLoading(false);
   };
 
+  const embedUrl = getEmbedUrl(dayContent?.songUrl);
+  const isYouTubeEmbed = embedUrl.includes('youtube.com/embed/');
+
+  const sendYouTubeCommand = (func: string, args: any[] = []) => {
+    const frame = songFrameRef.current;
+    if (!frame?.contentWindow) return;
+
+    frame.contentWindow.postMessage(
+      JSON.stringify({
+        event: 'command',
+        func,
+        args,
+      }),
+      '*',
+    );
+  };
+
+  const triggerYouTubePlayback = () => {
+    if (!isYouTubeEmbed) return;
+    sendYouTubeCommand('unMute');
+    sendYouTubeCommand('playVideo');
+  };
+
+  const initializeYouTubeEvents = () => {
+    if (!isYouTubeEmbed) return;
+    songFrameRef.current?.contentWindow?.postMessage(
+      JSON.stringify({
+        event: 'listening',
+      }),
+      '*',
+    );
+    sendYouTubeCommand('addEventListener', ['onReady']);
+    sendYouTubeCommand('addEventListener', ['onStateChange']);
+  };
+
+  useEffect(() => {
+    const handleYouTubeMessage = (event: MessageEvent) => {
+      if (!songFrameRef.current?.contentWindow || event.source !== songFrameRef.current.contentWindow) return;
+
+      let payload: any = null;
+      if (typeof event.data === 'string') {
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+      } else if (typeof event.data === 'object' && event.data !== null) {
+        payload = event.data;
+      }
+
+      if (payload?.event === 'onReady') {
+        setYoutubeReady(true);
+        triggerYouTubePlayback();
+      }
+    };
+
+    window.addEventListener('message', handleYouTubeMessage);
+    return () => {
+      window.removeEventListener('message', handleYouTubeMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!embedUrl || !isYouTubeEmbed) return;
+
+    const schedule = [600, 1300, 2300];
+    const timers = schedule.map((delay) =>
+      window.setTimeout(() => {
+        initializeYouTubeEvents();
+        triggerYouTubePlayback();
+      }, delay),
+    );
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [embedUrl, isYouTubeEmbed]);
+
+  useEffect(() => {
+    if (!embedUrl || !isYouTubeEmbed || !youtubeReady) return;
+    triggerYouTubePlayback();
+  }, [embedUrl, isYouTubeEmbed, youtubeReady]);
+
   if (!valentineDay || error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-100 to-orange-100 p-6">
@@ -148,8 +243,40 @@ export const ValentinePage = () => {
   const displaySubtitle = dayContent?.heroSubtitle || (profileData?.partnerName ? `For ${profileData.partnerName}` : 'Made with love');
   const displayMessage = dayContent?.customMessage || profileData?.message || valentineDay.message;
   const displayQuote = dayContent?.quote || '';
-  const embedUrl = getEmbedUrl(dayContent?.songUrl);
   const ctaLabel = dayContent?.ctaLabel || 'Yes! 💕';
+
+  if (!hasProceeded) {
+    return (
+      <div className="min-h-screen relative bg-gradient-to-br from-rose-50 via-orange-50 to-pink-100 overflow-hidden flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-rose-300/30 blur-3xl animate-pulse" />
+          <div className="absolute top-1/3 -right-16 h-64 w-64 rounded-full bg-fuchsia-300/25 blur-3xl animate-pulse" />
+          <div className="absolute -bottom-20 left-1/3 h-72 w-72 rounded-full bg-orange-300/20 blur-3xl animate-pulse" />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="relative z-10 w-full max-w-xl bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-10 border border-rose-100 text-center"
+        >
+          <div className="text-6xl mb-4">{valentineDay.emoji}</div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
+            This is for you
+          </h1>
+          <p className="text-3xl mt-2 mb-6">❤️</p>
+          <p className="text-gray-600 mb-8">From @{resolvedUsername || route.username || 'someone special'}</p>
+
+          <Button
+            onClick={() => setHasProceeded(true)}
+            className="bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 text-white px-8 py-6 text-lg rounded-2xl"
+          >
+            Proceed
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-rose-50 via-orange-50 to-pink-100 overflow-hidden">
@@ -260,11 +387,17 @@ export const ValentinePage = () => {
                 <Music size={18} className="text-rose-500" /> Our Song
               </h3>
               <iframe
+                ref={songFrameRef}
                 src={embedUrl}
                 className="w-full h-[180px] rounded-xl border border-rose-100"
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
+                loading="eager"
                 title="Valentine soundtrack"
+                onLoad={() => {
+                  setYoutubeReady(false);
+                  initializeYouTubeEvents();
+                  triggerYouTubePlayback();
+                }}
               />
             </motion.div>
           )}
